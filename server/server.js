@@ -45,6 +45,21 @@ app.get('/todos/:id', (req, res) => {
     res.send({todo})
   }).catch((e) => {res.status(400).send()});
 });
+// Nueva ruta para eliminar un document por ID
+app.delete('/todos/:id', (req, res) => {
+  var id = req.params.id
+
+  if(!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+  // Aplicamos el metodo para remover por ID
+  Todo.findByIdAndRemove(id).then((doc) => {
+    if(!doc) {
+      return res.status(404).send();
+    }
+    res.send(doc)
+  }).catch((e) => {res.status(404).send()});
+});
     
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
