@@ -1,35 +1,27 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
+const jwt = require('jsonwebtoken');
+const _ = require('lodash');
 
-var User = mongoose.model('User', {
+// Usamos mongoose.Schema para crear el model,
+// ya que este nos permite integrar metodos custom
+var UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
     trim: true,
     minlength: 1,
-    // con unique, como su nombre lo indica, 
-    // verificamos que el email sea unico.
     unique: true,
-    // validate nos sirve para hacer una verificacion
-    // si tiene estructura de un correo
     validate: {
-      // en validator, le pasamos la const validator
-      // declarada arriba (libreria externa)y su metodo isEmail,
-      // el cual recibe el value. Ya no es necesario hacer 
-      // una custom function.
       validator: validator.isEmail,
       message: '{VALUE} is not a valid email'
     }
   },
-  // declaramos el modelo del password.
   password: {
     type: String,
     required: true,
     minlength: 6
   },
-  // tokens solo funciona para mongodb
-  // esta variable sirve para declarar los
-  // parametros que llevara los token.
   tokens: [{
     access:{
       type: String,
@@ -41,5 +33,35 @@ var User = mongoose.model('User', {
     }
   }]
 });
+// sobreescribimos el metodo toJSON el cual mandara 
+// los datos que nosotros deseemos que se vean.
+UserSchema.methods.toJSON = function () {
+  var user = this;
+  // user.toObject es responsable de tomar tu variable 
+  // mongoose(user) y convertirla en un objeto regular
+  // con las propiedades que existan en el documento
+  var userObject = user.toObject();
+
+  return _.pick(userObject, ['_id', 'email']);
+};
+
+// Nuestro metodo custom para generar el token de auth.
+// usamos las fucntion normales para poder bindear el
+// this del UserSchema.
+UserSchema.methods.generateAuthToken = function () {
+  var user = this;
+  var access = 'auth';
+  var token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString();
+
+  user.tokens.push({access, token});
+  //OJO -- retornamos una promesa que retorna el token
+  return user.save().then(() => {
+    return token;
+  });
+
+};
+
+// Le pasamos el UserShcema indicando que ese sera el modelo.
+var User = mongoose.model('User', UserSchema);
 
 module.exports = {User}

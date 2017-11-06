@@ -93,16 +93,22 @@ app.patch('/todos/:id', (req, res) => {
 
 // POST /users
 app.post('/users', (req, res) => {
-  // recordad _pick viene de lodash y sirve para crear
-  // un objeto con los campos que le indiquemos
+
   var body = _.pick(req.body, ['email', 'password'])
 
-  // pasamos la variable body por que esta es un objeto
-  // con los valores que requerimos.
   var user = new User(body);
 
-  user.save().then((doc) => {
-    res.send(doc);
+  user.save().then(() => {
+    // llamamos al metodo generateAuthToken que declaramos
+    // en el archivo user.js y lo retornamos para pasar el token
+    return user.generateAuthToken();
+    // aqui recibimos el token de la promesa que 
+    // retornamos en el archivo user.js
+  }).then((token) =>{
+    // al header sirve para pasar el token por http
+    // le inidicamos que es un custom header usado para 
+    // propios fines y le pasamos el token.
+    res.header('x-auth', token).send(user);
   }).catch((e) => {
     res.status(400).send(e);
   })
