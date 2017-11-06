@@ -3,8 +3,6 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
 
-// Usamos mongoose.Schema para crear el model,
-// ya que este nos permite integrar metodos custom
 var UserSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -13,8 +11,6 @@ var UserSchema = new mongoose.Schema({
     minlength: 1,
     unique: true,
     validate: {
-      // se le declara esta propiedad para decir
-      // que es asincrono.
       isAsync: true,
       validator: validator.isEmail,
       message: '{VALUE} is not a valid email'
@@ -36,35 +32,53 @@ var UserSchema = new mongoose.Schema({
     }
   }]
 });
-// sobreescribimos el metodo toJSON el cual mandara 
-// los datos que nosotros deseemos que se vean.
+
 UserSchema.methods.toJSON = function () {
   var user = this;
-  // user.toObject es responsable de tomar tu variable 
-  // mongoose(user) y convertirla en un objeto regular
-  // con las propiedades que existan en el documento
   var userObject = user.toObject();
 
   return _.pick(userObject, ['_id', 'email']);
 };
 
-// Nuestro metodo custom para generar el token de auth.
-// usamos las fucntion normales para poder bindear el
-// this del UserSchema.
 UserSchema.methods.generateAuthToken = function () {
+  // aqui usamos user por que instanciamos el metodo
+  // ya que usamos methods.
   var user = this;
   var access = 'auth';
   var token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString();
 
   user.tokens.push({access, token});
-  //OJO -- retornamos una promesa que retorna el token
   return user.save().then(() => {
     return token;
   });
+};
+// OJO -- aqui usamos statics, todo lo que este 
+// dentro sera un metodo del modelo.
+UserSchema.statics.findByToken = function (token) {
+  // User declaramos el metodo del modelo
+  // por que usamos statics
+  var User = this;
+  var decoded;
+  // aqui asignaremos valor a decoded
+  // ya que jwt.verify() aventara un error
+  // si algo sale mal, si el token ha sido
+  // manipulada al igual que el secret.
+  // Para eso usamos el try/catch
+  try {
+    decoded = jwt.verify(token, 'abc123');
+  } catch (e) {
+    return Promise.reject()
+  }
 
+  return User.findOne({
+    // para acceder a propiedad anidadas
+    // se utilizan ''
+    '_id': decoded._id,
+    'tokens.token': token,
+    'tokens.access': 'auth'
+  })
 };
 
-// Le pasamos el UserShcema indicando que ese sera el modelo.
 var User = mongoose.model('User', UserSchema);
 
 module.exports = {User}

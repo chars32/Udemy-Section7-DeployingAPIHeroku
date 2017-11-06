@@ -8,6 +8,7 @@ const {ObjectID} = require('mongodb');
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
+var {authenticate} = require('./middleware/authenticate')
 
 var app = express();
 const port = process.env.PORT;
@@ -99,21 +100,19 @@ app.post('/users', (req, res) => {
   var user = new User(body);
 
   user.save().then(() => {
-    // llamamos al metodo generateAuthToken que declaramos
-    // en el archivo user.js y lo retornamos para pasar el token
     return user.generateAuthToken();
-    // aqui recibimos el token de la promesa que 
-    // retornamos en el archivo user.js
   }).then((token) =>{
-    // al header sirve para pasar el token por http
-    // le inidicamos que es un custom header usado para 
-    // propios fines y le pasamos el token.
     res.header('x-auth', token).send(user);
   }).catch((e) => {
     res.status(400).send(e);
   })
 });
 
+// pasamos el req por el middleware authenticate
+// para verificar que sea el mismo usuario.
+app.get('/users/me', authenticate, (req, res) => {
+  res.send(req.user);
+});
 
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
