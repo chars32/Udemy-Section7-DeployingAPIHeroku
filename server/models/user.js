@@ -13,6 +13,9 @@ var UserSchema = new mongoose.Schema({
     minlength: 1,
     unique: true,
     validate: {
+      // se le declara esta propiedad para decir
+      // que es asincrono.
+      isAsync: true,
       validator: validator.isEmail,
       message: '{VALUE} is not a valid email'
     }
