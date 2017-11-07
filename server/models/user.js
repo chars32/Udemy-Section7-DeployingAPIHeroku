@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
 
 var UserSchema = new mongoose.Schema({
   email: {
@@ -41,8 +42,6 @@ UserSchema.methods.toJSON = function () {
 };
 
 UserSchema.methods.generateAuthToken = function () {
-  // aqui usamos user por que instanciamos el metodo
-  // ya que usamos methods.
   var user = this;
   var access = 'auth';
   var token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString();
@@ -52,18 +51,11 @@ UserSchema.methods.generateAuthToken = function () {
     return token;
   });
 };
-// OJO -- aqui usamos statics, todo lo que este 
-// dentro sera un metodo del modelo.
+
 UserSchema.statics.findByToken = function (token) {
-  // User declaramos el metodo del modelo
-  // por que usamos statics
   var User = this;
   var decoded;
-  // aqui asignaremos valor a decoded
-  // ya que jwt.verify() aventara un error
-  // si algo sale mal, si el token ha sido
-  // manipulada al igual que el secret.
-  // Para eso usamos el try/catch
+
   try {
     decoded = jwt.verify(token, 'abc123');
   } catch (e) {
@@ -71,13 +63,30 @@ UserSchema.statics.findByToken = function (token) {
   }
 
   return User.findOne({
-    // para acceder a propiedad anidadas
-    // se utilizan ''
     '_id': decoded._id,
     'tokens.token': token,
     'tokens.access': 'auth'
   })
 };
+// pre sirve para hacer un chequeo del password
+// del usuario ha sido cambiado y de ser asi generar 
+// el hash, esto sirve para la primera vez como 
+// si se cambia el password varias veces.
+// Todo esto antes de guardar(Save)
+UserSchema.pre('save', function (next) {
+  var User = this;
+
+  if (User.isModified('password')) {
+    bcrypt.genSalt(10, (err, salt) => {
+      bcrypt.hash(User.password, salt, (err, hash) => {
+        User.password = hash;
+        next();
+      });
+    })
+  } else {
+    next()
+  }
+});
 
 var User = mongoose.model('User', UserSchema);
 

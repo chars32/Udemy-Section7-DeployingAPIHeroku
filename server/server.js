@@ -108,8 +108,6 @@ app.post('/users', (req, res) => {
   })
 });
 
-// pasamos el req por el middleware authenticate
-// para verificar que sea el mismo usuario.
 app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user);
 });
