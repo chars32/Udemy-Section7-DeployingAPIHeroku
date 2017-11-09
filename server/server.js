@@ -14,10 +14,12 @@ var app = express();
 const port = process.env.PORT;
 
 app.use(bodyParser.json());
-
-app.post('/todos', (req, res) => {
+// usamos authenticate para validar el token
+app.post('/todos', authenticate, (req, res) => {
   var todo = new Todo({
-    text: req.body.text
+    text: req.body.text,
+    // declaramos el creador
+    _creator: req.user._id
   });
 
   todo.save().then((doc) => {
@@ -26,9 +28,13 @@ app.post('/todos', (req, res) => {
     res.status(400).send(e);
   });
 });
-
-app.get('/todos', (req, res) => {
-  Todo.find().then((todos) => {
+// usamos authenticate para validar el token
+app.get('/todos', authenticate, (req, res) => {
+  Todo.find({
+    // pasamos este query para que solo muestre
+    // los que hizo el creator
+    _creator: req.user._id
+  }).then((todos) => {
     res.send({todos});
   }, (e) => {
     res.status(400).send(e);

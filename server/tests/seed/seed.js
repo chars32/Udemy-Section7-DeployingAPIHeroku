@@ -6,23 +6,6 @@ const jwt = require('jsonwebtoken');
 const { Todo } = require('./../../models/todo');
 const { User } = require('./../../models/user');
 
-// Sedeamos los todos
-const todos = [{
-  _id: new ObjectID(),
-  text: 'First test todo'
-}, {
-  _id: new ObjectID(),
-  text: 'Second test todo',
-  completed: true,
-  completedAt: 333
-}];
-// limpiamos bd Todo e insertamos.
-const populateTodos = (done) => {
-  Todo.remove({}).then(() => {
-    return Todo.insertMany(todos);
-  }).then(() => done());
-};
-
 // declaramos id´s para los users
 const userOneId = new ObjectID();
 const userTwoId = new ObjectID();
@@ -49,6 +32,26 @@ const populateUsers = (done) => {
     // igual que las promesa normal, no retorna valor
     // hasta que se cumplan los parametros pasados.
     return Promise.all([userOne, userTwo])
+  }).then(() => done());
+};
+
+// Sedeamos los todos
+const todos = [{
+  _id: new ObjectID(),
+  text: 'First test todo',
+  // aqui declaramos el id del creador del todo
+  _creator: userOneId
+}, {
+  _id: new ObjectID(),
+  text: 'Second test todo',
+  completed: true,
+  completedAt: 333,
+  _creator: userTwoId
+}];
+// limpiamos bd Todo e insertamos.
+const populateTodos = (done) => {
+  Todo.remove({}).then(() => {
+    return Todo.insertMany(todos);
   }).then(() => done());
 };
 
