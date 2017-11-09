@@ -68,6 +68,27 @@ UserSchema.statics.findByToken = function (token) {
     'tokens.access': 'auth'
   })
 };
+// Buscar por email y password
+UserSchema.statics.findByCredentials = function (email, password) {
+  var User = this;
+
+  return User.findOne({email}).then((user) => {
+    if (!user) {
+      return Promise.reject();
+    }
+
+    return new Promise((resolve, reject) => {
+      bcrypt.compare(password, user.password, (err, res) => {
+        if (res) {
+          resolve(user);
+        } else {
+          reject();
+        }
+      })
+    });
+  });
+};
+
 // pre sirve para hacer un chequeo del password
 // del usuario ha sido cambiado y de ser asi generar 
 // el hash, esto sirve para la primera vez como 
