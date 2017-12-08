@@ -32,7 +32,7 @@ app.post('/todos', authenticate, async (req, res) => {
   }
 });
 // usamos authenticate para validar el token
-app.get('/todos', async (req, res) => {
+app.get('/todos', authenticate, async (req, res) => {
   
   try {
     const todos = await Todo.find({
